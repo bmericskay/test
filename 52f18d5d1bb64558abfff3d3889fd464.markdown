@@ -1,0 +1,5093 @@
+---
+jupyter:
+  colab:
+    authorship_tag: ABX9TyNDEhtS9NMga0nrbluR2WBA
+    collapsed_sections:
+    - x_ttJ_XU43Za
+    include_colab_link: true
+  kernelspec:
+    display_name: Python 3
+    name: python3
+  nbformat: 4
+  nbformat_minor: 0
+---
+
+::: {.cell .markdown colab_type="text" id="view-in-github"}
+`<a href="https://colab.research.google.com/github/mastersigat/GeoPandas/blob/main/S%C3%A9ance_1_(intro_Pandas).ipynb" target="_parent">`{=html}`<img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>`{=html}`</a>`{=html}
+:::
+
+::: {.cell .markdown id="PDNscZUy5ZVP"}
+# Séance 1 / Introduction à Pandas {#séance-1--introduction-à-pandas}
+
+Pandas est une bibliothèque écrite pour le langage de programmation
+Python permettant la manipulation et l\'analyse des données. Elle
+propose en particulier des structures de données et des opérations de
+manipulation de tableaux numériques et de séries temporelles.
+
+<https://pandas.pydata.org/>
+![images.png](vertopal_52f18d5d1bb64558abfff3d3889fd464/b9988fca68c396a750adc4e3992f7b1ea1a9e1f8.png)
+:::
+
+::: {.cell .markdown id="8PNwl1fDjWRU"}
+## Configuration de l\'environnement de travail (Google Colab)
+
+<https://colab.research.google.com/notebooks/intro.ipynb>
+:::
+
+::: {.cell .code id="U_wo94BSjWRy"}
+``` python
+#Initialisation de l'environnement avec geopandas
+!apt update
+!apt install gdal-bin python-gdal python3-gdal 
+# Install rtree - Geopandas requirment
+!apt install python3-rtree 
+# Install Geopandas
+!pip install geopandas
+```
+:::
+
+::: {.cell .code id="pyScSRHsjWR7"}
+``` python
+#Importation des librairies nécessaires
+import pandas as pd #Gestion de données
+import matplotlib.pyplot as plt #Visualisation de données
+import geopandas as gpd #Gestion données sptiales
+import os
+import numpy as np
+import shapely
+```
+:::
+
+::: {.cell .markdown id="x_ttJ_XU43Za"}
+## Téléchargement des données
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\"}" id="z9Nb8AAXjWSC" outputId="79eb513d-890d-405c-b401-916cc176bb75"}
+``` python
+#Téléchargement des datas depuis le site opendata de Paris
+!wget -O Espacesverts.csv https://opendata.paris.fr/explore/dataset/espaces_verts/download/?format=csv&timezone=Europe/Berlin&lang=fr&use_labels_for_header=true&csv_separator=%3B
+```
+
+::: {.output .stream .stdout}
+    --2023-03-09 19:59:18--  https://opendata.paris.fr/explore/dataset/espaces_verts/download/?format=csv
+    Resolving opendata.paris.fr (opendata.paris.fr)... 34.249.199.226, 34.248.20.69
+    Connecting to opendata.paris.fr (opendata.paris.fr)|34.249.199.226|:443... connected.
+    HTTP request sent, awaiting response... 200 OK
+    Length: unspecified [application/csv]
+    Saving to: ‘Espacesverts.csv’
+
+    Espacesverts.csv        [      <=>           ]  10.05M  6.62MB/s    in 1.5s    
+
+    2023-03-09 19:59:20 (6.62 MB/s) - ‘Espacesverts.csv’ saved [10541056]
+:::
+:::
+
+::: {.cell .markdown id="JW5VMs5IaZR9"}
+## Exploration du jeux de données des espaces verts
+:::
+
+::: {.cell .markdown id="vIet2qoTUysB"}
+<https://studylib.net/doc/25268801/pandas-cheat-sheet>
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":525}" id="pDPmszCQQaM8" outputId="27b1fa4a-ed25-4c17-c956-8224c471acf7"}
+``` python
+#Importer CSV to dataframe
+
+Espacesverts = pd.read_csv("Espacesverts.csv", sep=';')
+Espacesverts.head()
+```
+
+::: {.output .execute_result execution_count="4"}
+```{=html}
+
+  <div id="df-334a1074-20b0-4870-afc8-3328cadfb121">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>nsq_espace_vert</th>
+      <th>nom_ev</th>
+      <th>type_ev</th>
+      <th>categorie</th>
+      <th>adresse_numero</th>
+      <th>adresse_complement</th>
+      <th>adresse_typevoie</th>
+      <th>adresse_libellevoie</th>
+      <th>adresse_codepostal</th>
+      <th>poly_area</th>
+      <th>...</th>
+      <th>ouvert_ferme</th>
+      <th>id_division</th>
+      <th>id_atelier_horticole</th>
+      <th>ida3d_enb</th>
+      <th>site_villes</th>
+      <th>id_eqpt</th>
+      <th>competence</th>
+      <th>geom</th>
+      <th>url_plan</th>
+      <th>geom_x_y</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>10906</td>
+      <td>JARDINIERE ANGLE DES RUES DE BELLEVUE - DES LILAS</td>
+      <td>Décorations sur la voie publique</td>
+      <td>Jardiniere</td>
+      <td>29.0</td>
+      <td>NaN</td>
+      <td>RUE DES</td>
+      <td>LILAS</td>
+      <td>75019</td>
+      <td>46.0</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>119</td>
+      <td>43.0</td>
+      <td>JDE7538</td>
+      <td>SV</td>
+      <td>7538</td>
+      <td>CA</td>
+      <td>{"coordinates": [[[2.3962589173753317, 48.8795...</td>
+      <td>http://p70-planet.apps.paris.mdp/Advitium/Appe...</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>11445</td>
+      <td>JARDINIERE VERTICALE DU 28 RUE DES DAMES</td>
+      <td>Murs végétalisés</td>
+      <td>Murs vegetalises</td>
+      <td>28.0</td>
+      <td>NaN</td>
+      <td>RUE DES</td>
+      <td>DAMES</td>
+      <td>75017</td>
+      <td>2.0</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>117</td>
+      <td>36.0</td>
+      <td>JDE9426</td>
+      <td>SV</td>
+      <td>9426</td>
+      <td>CA</td>
+      <td>{"coordinates": [[[2.3240063572037286, 48.8844...</td>
+      <td>http://p70-planet.apps.paris.mdp/Advitium/Appe...</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>373</td>
+      <td>SQUARE NICOLE DE HAUTECLOCQUE</td>
+      <td>Promenades ouvertes</td>
+      <td>Square</td>
+      <td>1.0</td>
+      <td>NaN</td>
+      <td>VOIE</td>
+      <td>CV/15</td>
+      <td>75015</td>
+      <td>4997.0</td>
+      <td>...</td>
+      <td>Non</td>
+      <td>115</td>
+      <td>26.0</td>
+      <td>56551</td>
+      <td>1272</td>
+      <td>3650</td>
+      <td>CA</td>
+      <td>{"coordinates": [[[2.2952346225701628, 48.8517...</td>
+      <td>http://p70-planet.apps.paris.mdp/Advitium/Appe...</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>151</td>
+      <td>SQUARE LOUIS MAJORELLE</td>
+      <td>Promenades ouvertes</td>
+      <td>Square</td>
+      <td>28.0</td>
+      <td>B</td>
+      <td>RUE DE LA</td>
+      <td>FORGE ROYALE</td>
+      <td>75011</td>
+      <td>2053.0</td>
+      <td>...</td>
+      <td>Non</td>
+      <td>111</td>
+      <td>11.0</td>
+      <td>48547</td>
+      <td>318</td>
+      <td>3635</td>
+      <td>CA</td>
+      <td>{"coordinates": [[[2.3808589008893586, 48.8519...</td>
+      <td>http://p70-planet.apps.paris.mdp/Advitium/Appe...</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>10319</td>
+      <td>JARDINIERES DE L'AVENUE DU BEL AIR</td>
+      <td>Décorations sur la voie publique</td>
+      <td>Jardiniere</td>
+      <td>1.0</td>
+      <td>NaN</td>
+      <td>AVENUE DU</td>
+      <td>BEL AIR</td>
+      <td>75012</td>
+      <td>165.0</td>
+      <td>...</td>
+      <td>NaN</td>
+      <td>111</td>
+      <td>16.0</td>
+      <td>JDE7267</td>
+      <td>SV</td>
+      <td>7267</td>
+      <td>CA</td>
+      <td>{"coordinates": [[[[2.396712325019227, 48.8473...</td>
+      <td>http://p70-planet.apps.paris.mdp/Advitium/Appe...</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+<p>5 rows × 29 columns</p>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-334a1074-20b0-4870-afc8-3328cadfb121')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-334a1074-20b0-4870-afc8-3328cadfb121 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-334a1074-20b0-4870-afc8-3328cadfb121');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\"}" id="Ou0N8YQ63Mb_" outputId="cb896dda-161c-48b7-c04a-11da83328444"}
+``` python
+#Checker les types de champs
+
+Espacesverts.dtypes
+```
+
+::: {.output .execute_result execution_count="8"}
+    nsq_espace_vert            int64
+    nom_ev                    object
+    type_ev                   object
+    categorie                 object
+    adresse_numero           float64
+    adresse_complement        object
+    adresse_typevoie          object
+    adresse_libellevoie       object
+    adresse_codepostal         int64
+    poly_area                float64
+    surface_totale_reelle    float64
+    surface_horticole        float64
+    presence_cloture          object
+    perimeter                float64
+    annee_ouverture          float64
+    annee_renovation         float64
+    ancien_nom_ev             object
+    annee_changement_nom     float64
+    nb_entites               float64
+    ouvert_ferme              object
+    id_division                int64
+    id_atelier_horticole     float64
+    ida3d_enb                 object
+    site_villes               object
+    id_eqpt                   object
+    competence                object
+    geom                      object
+    url_plan                  object
+    geom_x_y                 float64
+    dtype: object
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\"}" id="4TtrUa8p0Mmi" outputId="d2d806b9-2cfe-4eff-ab19-29f43ca5c285"}
+``` python
+#Compter le nombre d'enregistrements
+
+Espacesverts['nsq_espace_vert'].size
+```
+
+::: {.output .execute_result execution_count="9"}
+    2242
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":206}" id="R7H8Sb3h-RYt" outputId="81866a6d-b836-428d-92e9-8020be44e148"}
+``` python
+#Réorganiser la table (sélection des colonnes importantes)
+
+EspacesvertsOk = Espacesverts[["nsq_espace_vert", "nom_ev", "categorie", "adresse_codepostal", "surface_totale_reelle", "annee_ouverture"]]
+EspacesvertsOk.head()
+```
+
+::: {.output .execute_result execution_count="5"}
+```{=html}
+
+  <div id="df-ca9b9f16-2b52-4afb-a750-16816ae350d7">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>nsq_espace_vert</th>
+      <th>nom_ev</th>
+      <th>categorie</th>
+      <th>adresse_codepostal</th>
+      <th>surface_totale_reelle</th>
+      <th>annee_ouverture</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>10906</td>
+      <td>JARDINIERE ANGLE DES RUES DE BELLEVUE - DES LILAS</td>
+      <td>Jardiniere</td>
+      <td>75019</td>
+      <td>50.0</td>
+      <td>2003.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>11445</td>
+      <td>JARDINIERE VERTICALE DU 28 RUE DES DAMES</td>
+      <td>Murs vegetalises</td>
+      <td>75017</td>
+      <td>NaN</td>
+      <td>2009.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>373</td>
+      <td>SQUARE NICOLE DE HAUTECLOCQUE</td>
+      <td>Square</td>
+      <td>75015</td>
+      <td>7540.0</td>
+      <td>1998.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>151</td>
+      <td>SQUARE LOUIS MAJORELLE</td>
+      <td>Square</td>
+      <td>75011</td>
+      <td>2000.0</td>
+      <td>1993.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>10319</td>
+      <td>JARDINIERES DE L'AVENUE DU BEL AIR</td>
+      <td>Jardiniere</td>
+      <td>75012</td>
+      <td>108.0</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-ca9b9f16-2b52-4afb-a750-16816ae350d7')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-ca9b9f16-2b52-4afb-a750-16816ae350d7 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-ca9b9f16-2b52-4afb-a750-16816ae350d7');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":296}" id="_NoQ9SqE8ano" outputId="655c4bba-47c1-4749-8c31-ec1e73734340"}
+``` python
+# Renommer les noms des champs
+
+EspacesvertsOk.rename(columns={'nsq_espace_vert': 'id','nom_ev': 'nom','adresse_codepostal': 'CodePostal', 'surface_totale_reelle' : 'surface', 'annee_ouverture': 'ouverture'}, inplace=True)
+EspacesvertsOk.head()
+```
+
+::: {.output .stream .stderr}
+    /usr/local/lib/python3.9/dist-packages/pandas/core/frame.py:5039: SettingWithCopyWarning: 
+    A value is trying to be set on a copy of a slice from a DataFrame
+
+    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+      return super().rename(
+:::
+
+::: {.output .execute_result execution_count="6"}
+```{=html}
+
+  <div id="df-72654597-0c0f-4d68-920e-9d3464a278c9">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+      <th>nom</th>
+      <th>categorie</th>
+      <th>CodePostal</th>
+      <th>surface</th>
+      <th>ouverture</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>10906</td>
+      <td>JARDINIERE ANGLE DES RUES DE BELLEVUE - DES LILAS</td>
+      <td>Jardiniere</td>
+      <td>75019</td>
+      <td>50.0</td>
+      <td>2003.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>11445</td>
+      <td>JARDINIERE VERTICALE DU 28 RUE DES DAMES</td>
+      <td>Murs vegetalises</td>
+      <td>75017</td>
+      <td>NaN</td>
+      <td>2009.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>373</td>
+      <td>SQUARE NICOLE DE HAUTECLOCQUE</td>
+      <td>Square</td>
+      <td>75015</td>
+      <td>7540.0</td>
+      <td>1998.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>151</td>
+      <td>SQUARE LOUIS MAJORELLE</td>
+      <td>Square</td>
+      <td>75011</td>
+      <td>2000.0</td>
+      <td>1993.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>10319</td>
+      <td>JARDINIERES DE L'AVENUE DU BEL AIR</td>
+      <td>Jardiniere</td>
+      <td>75012</td>
+      <td>108.0</td>
+      <td>NaN</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-72654597-0c0f-4d68-920e-9d3464a278c9')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-72654597-0c0f-4d68-920e-9d3464a278c9 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-72654597-0c0f-4d68-920e-9d3464a278c9');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\"}" id="QCtJqHe04NIo" outputId="b1af25d1-b8e6-46e8-f491-ba82d0304400"}
+``` python
+#Changer le type d'une colonne
+EspacesvertsOk['id'] = EspacesvertsOk['id'].astype(str)
+EspacesvertsOk.dtypes
+```
+
+::: {.output .stream .stderr}
+    <ipython-input-7-77d0c1e8b396>:2: SettingWithCopyWarning: 
+    A value is trying to be set on a copy of a slice from a DataFrame.
+    Try using .loc[row_indexer,col_indexer] = value instead
+
+    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+      EspacesvertsOk['id'] = EspacesvertsOk['id'].astype(str)
+:::
+
+::: {.output .execute_result execution_count="7"}
+    id             object
+    nom            object
+    categorie      object
+    CodePostal      int64
+    surface       float64
+    ouverture     float64
+    dtype: object
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":313}" id="hscwWy2-dJ_i" outputId="674cd420-0705-4b15-b500-d326b420e4ec"}
+``` python
+# Concaténer des champs
+EspacesvertsOk["concat"] = EspacesvertsOk["categorie"] + " - " + EspacesvertsOk["nom"]
+EspacesvertsOk.head()
+```
+
+::: {.output .stream .stderr}
+    <ipython-input-8-b20301b15a03>:2: SettingWithCopyWarning: 
+    A value is trying to be set on a copy of a slice from a DataFrame.
+    Try using .loc[row_indexer,col_indexer] = value instead
+
+    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+      EspacesvertsOk["concat"] = EspacesvertsOk["categorie"] + " - " + EspacesvertsOk["nom"]
+:::
+
+::: {.output .execute_result execution_count="8"}
+```{=html}
+
+  <div id="df-f7c0c3dc-2ec2-4cdf-a78b-e9042d6e8eda">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+      <th>nom</th>
+      <th>categorie</th>
+      <th>CodePostal</th>
+      <th>surface</th>
+      <th>ouverture</th>
+      <th>concat</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>10906</td>
+      <td>JARDINIERE ANGLE DES RUES DE BELLEVUE - DES LILAS</td>
+      <td>Jardiniere</td>
+      <td>75019</td>
+      <td>50.0</td>
+      <td>2003.0</td>
+      <td>Jardiniere - JARDINIERE ANGLE DES RUES DE BELL...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>11445</td>
+      <td>JARDINIERE VERTICALE DU 28 RUE DES DAMES</td>
+      <td>Murs vegetalises</td>
+      <td>75017</td>
+      <td>NaN</td>
+      <td>2009.0</td>
+      <td>Murs vegetalises - JARDINIERE VERTICALE DU 28 ...</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>373</td>
+      <td>SQUARE NICOLE DE HAUTECLOCQUE</td>
+      <td>Square</td>
+      <td>75015</td>
+      <td>7540.0</td>
+      <td>1998.0</td>
+      <td>Square - SQUARE NICOLE DE HAUTECLOCQUE</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>151</td>
+      <td>SQUARE LOUIS MAJORELLE</td>
+      <td>Square</td>
+      <td>75011</td>
+      <td>2000.0</td>
+      <td>1993.0</td>
+      <td>Square - SQUARE LOUIS MAJORELLE</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>10319</td>
+      <td>JARDINIERES DE L'AVENUE DU BEL AIR</td>
+      <td>Jardiniere</td>
+      <td>75012</td>
+      <td>108.0</td>
+      <td>NaN</td>
+      <td>Jardiniere - JARDINIERES DE L'AVENUE DU BEL AIR</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-f7c0c3dc-2ec2-4cdf-a78b-e9042d6e8eda')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-f7c0c3dc-2ec2-4cdf-a78b-e9042d6e8eda button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-f7c0c3dc-2ec2-4cdf-a78b-e9042d6e8eda');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":421}" id="bmpmQ2Il5w-d" outputId="5ada0411-9343-47c4-f07d-71a86c4ecd92"}
+``` python
+#Diviser un champ
+EspacesvertsOk['CodePostal'] = EspacesvertsOk['CodePostal'].astype(str)
+EspacesvertsOk['Arrondissement'] = EspacesvertsOk['CodePostal'].str[-2:]
+EspacesvertsOk.head()
+```
+
+::: {.output .stream .stderr}
+    <ipython-input-9-798e748c9877>:2: SettingWithCopyWarning: 
+    A value is trying to be set on a copy of a slice from a DataFrame.
+    Try using .loc[row_indexer,col_indexer] = value instead
+
+    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+      EspacesvertsOk['CodePostal'] = EspacesvertsOk['CodePostal'].astype(str)
+    <ipython-input-9-798e748c9877>:3: SettingWithCopyWarning: 
+    A value is trying to be set on a copy of a slice from a DataFrame.
+    Try using .loc[row_indexer,col_indexer] = value instead
+
+    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+      EspacesvertsOk['Arrondissement'] = EspacesvertsOk['CodePostal'].str[-2:]
+:::
+
+::: {.output .execute_result execution_count="9"}
+```{=html}
+
+  <div id="df-273058a0-9c24-496f-b255-ac8cef9c4962">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+      <th>nom</th>
+      <th>categorie</th>
+      <th>CodePostal</th>
+      <th>surface</th>
+      <th>ouverture</th>
+      <th>concat</th>
+      <th>Arrondissement</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>10906</td>
+      <td>JARDINIERE ANGLE DES RUES DE BELLEVUE - DES LILAS</td>
+      <td>Jardiniere</td>
+      <td>75019</td>
+      <td>50.0</td>
+      <td>2003.0</td>
+      <td>Jardiniere - JARDINIERE ANGLE DES RUES DE BELL...</td>
+      <td>19</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>11445</td>
+      <td>JARDINIERE VERTICALE DU 28 RUE DES DAMES</td>
+      <td>Murs vegetalises</td>
+      <td>75017</td>
+      <td>NaN</td>
+      <td>2009.0</td>
+      <td>Murs vegetalises - JARDINIERE VERTICALE DU 28 ...</td>
+      <td>17</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>373</td>
+      <td>SQUARE NICOLE DE HAUTECLOCQUE</td>
+      <td>Square</td>
+      <td>75015</td>
+      <td>7540.0</td>
+      <td>1998.0</td>
+      <td>Square - SQUARE NICOLE DE HAUTECLOCQUE</td>
+      <td>15</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>151</td>
+      <td>SQUARE LOUIS MAJORELLE</td>
+      <td>Square</td>
+      <td>75011</td>
+      <td>2000.0</td>
+      <td>1993.0</td>
+      <td>Square - SQUARE LOUIS MAJORELLE</td>
+      <td>11</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>10319</td>
+      <td>JARDINIERES DE L'AVENUE DU BEL AIR</td>
+      <td>Jardiniere</td>
+      <td>75012</td>
+      <td>108.0</td>
+      <td>NaN</td>
+      <td>Jardiniere - JARDINIERES DE L'AVENUE DU BEL AIR</td>
+      <td>12</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-273058a0-9c24-496f-b255-ac8cef9c4962')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-273058a0-9c24-496f-b255-ac8cef9c4962 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-273058a0-9c24-496f-b255-ac8cef9c4962');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+:::
+
+::: {.cell .code id="1XhtAlQTyqLn"}
+``` python
+# Filtrer les données
+
+# Selectioner selon une modalité d'une variable
+Jardins = EspacesvertsOk[(EspacesvertsOk["categorie"] == 'Jardin')]
+
+# Sélectionner selon deux modalité d'une variable (OR)
+Squaresetjardins = EspacesvertsOk[(EspacesvertsOk["categorie"] == 'Jardin') | (EspacesvertsOk["categorie"] == 'Square')]
+
+# Selectioner selon une valeur numérique
+Grandespacesverts = EspacesvertsOk[(EspacesvertsOk["surface"] >10000)]
+
+#Sélectionner selon les modalités de deux variables (AND)
+Squares15eme = EspacesvertsOk[(EspacesvertsOk["Arrondissement"] == 75015) & (EspacesvertsOk["categorie"] == 'Square')]
+
+# Sélectioner toute les modalités sauf une
+Toussaufjardins = EspacesvertsOk[~(EspacesvertsOk["categorie"] == 'Jardin')]
+```
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\"}" id="G679uDOXvln3" outputId="fb723cc9-7684-4ab2-c29c-94c7cd039ee0"}
+``` python
+#Compter le nombre d'enregistrement des sélections
+
+Jardins['id'].size
+```
+
+::: {.output .execute_result execution_count="27"}
+    203
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":206}" id="3_RXV3eZA7bb" outputId="ac5337a4-53cc-474d-c083-8fbe793982e1"}
+``` python
+#Sélectionner selon les modalités de deux variables (AND)
+Squares15eme = EspacesvertsOk[(EspacesvertsOk["Arrondissement"] == '15') & (EspacesvertsOk["categorie"] == 'Square')]
+Squares15eme.head()
+```
+
+::: {.output .execute_result execution_count="29"}
+```{=html}
+
+  <div id="df-1e02fa7d-35b9-4403-9b6b-52f2e9c7922b">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+      <th>nom</th>
+      <th>categorie</th>
+      <th>CodePostal</th>
+      <th>surface</th>
+      <th>ouverture</th>
+      <th>concat</th>
+      <th>Arrondissement</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>21</th>
+      <td>11967</td>
+      <td>SQUARE DE L'HOPITAL NECKER</td>
+      <td>Square</td>
+      <td>75015</td>
+      <td>10000.0</td>
+      <td>2020.0</td>
+      <td>Square - SQUARE DE L'HOPITAL NECKER</td>
+      <td>15</td>
+    </tr>
+    <tr>
+      <th>124</th>
+      <td>349</td>
+      <td>SQUARE CLOS FEUQUIERES - DESNOUETTES</td>
+      <td>Square</td>
+      <td>75015</td>
+      <td>14500.0</td>
+      <td>1972.0</td>
+      <td>Square - SQUARE CLOS FEUQUIERES - DESNOUETTES</td>
+      <td>15</td>
+    </tr>
+    <tr>
+      <th>400</th>
+      <td>359</td>
+      <td>SQUARE PABLO CASALS</td>
+      <td>Square</td>
+      <td>75015</td>
+      <td>5898.0</td>
+      <td>1979.0</td>
+      <td>Square - SQUARE PABLO CASALS</td>
+      <td>15</td>
+    </tr>
+    <tr>
+      <th>402</th>
+      <td>333</td>
+      <td>SQUARE JEAN CHERIOUX</td>
+      <td>Square</td>
+      <td>75015</td>
+      <td>3980.0</td>
+      <td>1896.0</td>
+      <td>Square - SQUARE JEAN CHERIOUX</td>
+      <td>15</td>
+    </tr>
+    <tr>
+      <th>592</th>
+      <td>347</td>
+      <td>SQUARE DE L'OISEAU LUNAIRE</td>
+      <td>Square</td>
+      <td>75015</td>
+      <td>4200.0</td>
+      <td>1969.0</td>
+      <td>Square - SQUARE DE L'OISEAU LUNAIRE</td>
+      <td>15</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-1e02fa7d-35b9-4403-9b6b-52f2e9c7922b')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-1e02fa7d-35b9-4403-9b6b-52f2e9c7922b button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-1e02fa7d-35b9-4403-9b6b-52f2e9c7922b');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":486}" id="2ZVQQg9J7XJm" outputId="757a6cd4-66c8-4f04-f141-d5638774dc86"}
+``` python
+# Regrouper les espaces verts par catégorie avec comptage (GROUP BY)
+
+Categorie = EspacesvertsOk[["categorie", "id"]].groupby("categorie").count()
+Categorie = Categorie.sort_values("id", ascending=True)
+Categorie.plot(kind="barh")
+Categorie.head()
+```
+
+::: {.output .execute_result execution_count="11"}
+```{=html}
+
+  <div id="df-9f1c04b9-65e6-48ab-b653-a34660642f38">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+    </tr>
+    <tr>
+      <th>categorie</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Arboretum</th>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>Terre-plein</th>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>Archipel</th>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>Bois</th>
+      <td>2</td>
+    </tr>
+    <tr>
+      <th>Ile</th>
+      <td>2</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-9f1c04b9-65e6-48ab-b653-a34660642f38')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-9f1c04b9-65e6-48ab-b653-a34660642f38 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-9f1c04b9-65e6-48ab-b653-a34660642f38');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/b1cebb83a7c199e79a4bbc816fbec4c5f2586cc5.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":238}" id="EPrKpo0CAh0z" outputId="ac7e544b-5097-452a-987b-559f50cf9f19"}
+``` python
+# Ne garder que les types principaux
+
+Categorie = Categorie[(Categorie["id"] >10)]
+Categorie.head()
+```
+
+::: {.output .execute_result execution_count="39"}
+```{=html}
+
+  <div id="df-8344bfcd-c788-412f-b9f7-4a201ba7b25f">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+    </tr>
+    <tr>
+      <th>categorie</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Pelouse</th>
+      <td>12</td>
+    </tr>
+    <tr>
+      <th>Parc</th>
+      <td>19</td>
+    </tr>
+    <tr>
+      <th>Espace Vert</th>
+      <td>20</td>
+    </tr>
+    <tr>
+      <th>Cimetière</th>
+      <td>21</td>
+    </tr>
+    <tr>
+      <th>Plate-bande</th>
+      <td>35</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-8344bfcd-c788-412f-b9f7-4a201ba7b25f')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-8344bfcd-c788-412f-b9f7-4a201ba7b25f button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-8344bfcd-c788-412f-b9f7-4a201ba7b25f');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":591}" id="XfPv9xDD94P-" outputId="c35f7e86-0c94-4843-85fb-d7f25a2bf462"}
+``` python
+# Diagramme circulaire des types d'espaces verts
+
+Categorie.plot.pie(y='id', figsize=(10, 10), legend=False)
+plt.title('Répartition selon le type de parc')
+plt.show()
+```
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/3c30554de1a5dc58873e29a5a08d2cb24129f4ce.png)
+:::
+:::
+
+::: {.cell .markdown id="SyQdRvU2CoDQ"}
+## Aller plus loin dans les graphiques
+
+Exemples :
+<https://pandas.pydata.org/pandas-docs/stable/user_guide/visualization.html>
+
+Documentation :
+<https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.plot.html>
+
+Gallery :<https://www.python-graph-gallery.com/>
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":438}" id="PwVRYnxACBbv" outputId="f46e1290-843a-494b-b34c-0b4f113e9ed3"}
+``` python
+Categorie = Categorie.sort_values("id", ascending=False)
+Categorie.plot(figsize =(14,5), kind="bar", color = "green")
+```
+
+::: {.output .execute_result execution_count="31"}
+    <AxesSubplot:xlabel='categorie'>
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/76df2d060c2b421be54ec183b5191b8abd9f2b6e.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":525}" id="Wqd7Dx0t3pqZ" outputId="f42eb0dc-2944-45e8-c3da-d04b1617006f"}
+``` python
+# Regrouper par année d'ouverture
+
+Anneeouverture = EspacesvertsOk[["ouverture", "id"]].groupby("ouverture").count()
+Anneeouverture.plot(kind="bar")
+Anneeouverture.head()
+```
+
+::: {.output .execute_result execution_count="32"}
+```{=html}
+
+  <div id="df-36740891-8f64-408f-842b-880b0b3b8224">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+    </tr>
+    <tr>
+      <th>ouverture</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1688.0</th>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1791.0</th>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1798.0</th>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1800.0</th>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1804.0</th>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-36740891-8f64-408f-842b-880b0b3b8224')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-36740891-8f64-408f-842b-880b0b3b8224 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-36740891-8f64-408f-842b-880b0b3b8224');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/d1c0ac3e14f464a583c768233229b960ae314771.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":377}" id="6bq952NbfpXe" outputId="aef30d64-1d60-4221-f32e-e4c1e10a411a"}
+``` python
+# Regrouper par année d'ouverture depuis 1950
+
+Espacesverts1950 = EspacesvertsOk[(EspacesvertsOk["ouverture"] >=1950)]
+Espacesvertsannee = Espacesverts1950[["ouverture", "id"]].groupby("ouverture").count()
+Espacesvertsannee.plot(figsize =(14,5), kind="bar")
+```
+
+::: {.output .execute_result execution_count="33"}
+    <AxesSubplot:xlabel='ouverture'>
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/3897305c58556d0e19ae78459102d0f592c18cc3.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":573}" id="jvJgF-wV3u3A" outputId="5fe85c1c-b679-471f-fd81-f01f5fde75a6"}
+``` python
+#Compter le nombre d'espaces vert par arrondissement
+
+EspacevertARDT = EspacesvertsOk[["Arrondissement", "id"]].groupby("Arrondissement").count()
+EspacevertARDT.plot(figsize =(10,5), kind="bar")
+plt.title("Nb d'espace verts par Ardt")
+plt.xlabel("Arrondissement")
+plt.ylabel("Nb espaces verts")
+EspacevertARDT.head()
+```
+
+::: {.output .execute_result execution_count="35"}
+```{=html}
+
+  <div id="df-d94ebfac-84cd-4664-a4ec-57c943c0cf01">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+    </tr>
+    <tr>
+      <th>Arrondissement</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>00</th>
+      <td>6</td>
+    </tr>
+    <tr>
+      <th>01</th>
+      <td>15</td>
+    </tr>
+    <tr>
+      <th>02</th>
+      <td>26</td>
+    </tr>
+    <tr>
+      <th>03</th>
+      <td>39</td>
+    </tr>
+    <tr>
+      <th>04</th>
+      <td>63</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-d94ebfac-84cd-4664-a4ec-57c943c0cf01')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-d94ebfac-84cd-4664-a4ec-57c943c0cf01 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-d94ebfac-84cd-4664-a4ec-57c943c0cf01');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/1a6061478b55a6652fad647d54a313c4c0b5ab1f.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":206}" id="yLIDU7QTgiNZ" outputId="8f85dd50-00aa-49aa-c70e-93b52e55c4c8"}
+``` python
+#Ne garder que les arrondissement de Paris
+
+EspacevertsParis = EspacesvertsOk[(EspacesvertsOk["CodePostal"].str.contains("75"))]
+EspacevertsParis.head()
+```
+
+::: {.output .execute_result execution_count="27"}
+```{=html}
+
+  <div id="df-94754e9c-3bc9-4597-b95e-af2953e742e5">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+      <th>nom</th>
+      <th>categorie</th>
+      <th>CodePostal</th>
+      <th>surface</th>
+      <th>ouverture</th>
+      <th>concat</th>
+      <th>Arrondissement</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>10906</td>
+      <td>JARDINIERE ANGLE DES RUES DE BELLEVUE - DES LILAS</td>
+      <td>Jardiniere</td>
+      <td>75019</td>
+      <td>50.0</td>
+      <td>2003.0</td>
+      <td>Jardiniere - JARDINIERE ANGLE DES RUES DE BELL...</td>
+      <td>19</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>11445</td>
+      <td>JARDINIERE VERTICALE DU 28 RUE DES DAMES</td>
+      <td>Murs vegetalises</td>
+      <td>75017</td>
+      <td>NaN</td>
+      <td>2009.0</td>
+      <td>Murs vegetalises - JARDINIERE VERTICALE DU 28 ...</td>
+      <td>17</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>373</td>
+      <td>SQUARE NICOLE DE HAUTECLOCQUE</td>
+      <td>Square</td>
+      <td>75015</td>
+      <td>7540.0</td>
+      <td>1998.0</td>
+      <td>Square - SQUARE NICOLE DE HAUTECLOCQUE</td>
+      <td>15</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>151</td>
+      <td>SQUARE LOUIS MAJORELLE</td>
+      <td>Square</td>
+      <td>75011</td>
+      <td>2000.0</td>
+      <td>1993.0</td>
+      <td>Square - SQUARE LOUIS MAJORELLE</td>
+      <td>11</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>10319</td>
+      <td>JARDINIERES DE L'AVENUE DU BEL AIR</td>
+      <td>Jardiniere</td>
+      <td>75012</td>
+      <td>108.0</td>
+      <td>NaN</td>
+      <td>Jardiniere - JARDINIERES DE L'AVENUE DU BEL AIR</td>
+      <td>12</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-94754e9c-3bc9-4597-b95e-af2953e742e5')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-94754e9c-3bc9-4597-b95e-af2953e742e5 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-94754e9c-3bc9-4597-b95e-af2953e742e5');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":573}" id="_2zNddI2aLFe" outputId="80ebf181-ba67-48e0-d658-ea7d9b11c162"}
+``` python
+#Compter le nombre d'espaces vert par arrondissement de Paris
+
+EspacevertsParisardt = EspacevertsParis[["Arrondissement", "id"]].groupby("Arrondissement").count()
+EspacevertsParisardt.plot(figsize =(10,5), kind="bar")
+plt.title("Nb d'espace verts par Ardt")
+plt.xlabel("Arrondissement")
+plt.ylabel("Nb espaces verts")
+EspacevertsParisardt.head()
+```
+
+::: {.output .execute_result execution_count="28"}
+```{=html}
+
+  <div id="df-95f0d004-8060-4093-bcd5-d5236f1bde1f">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+    </tr>
+    <tr>
+      <th>Arrondissement</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>01</th>
+      <td>15</td>
+    </tr>
+    <tr>
+      <th>02</th>
+      <td>26</td>
+    </tr>
+    <tr>
+      <th>03</th>
+      <td>39</td>
+    </tr>
+    <tr>
+      <th>04</th>
+      <td>63</td>
+    </tr>
+    <tr>
+      <th>05</th>
+      <td>83</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-95f0d004-8060-4093-bcd5-d5236f1bde1f')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-95f0d004-8060-4093-bcd5-d5236f1bde1f button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-95f0d004-8060-4093-bcd5-d5236f1bde1f');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/4eaa171d81d5f3942ceb65aaa65d56c3b1344bd2.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":379}" id="G86IOFFpKJAn" outputId="c720fef2-1fe3-4b5c-8908-36724a966537"}
+``` python
+#Boxplot des surfaces des espaces verts par type
+
+EspacevertsParis.boxplot(figsize =(20,5), column="surface", by="categorie") 
+```
+
+::: {.output .execute_result execution_count="32"}
+    <AxesSubplot:title={'center':'surface'}, xlabel='categorie'>
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/95484d63d8a286d99ebd107252ca83b56c814ea7.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\"}" id="anx7Dwr3AsE8" outputId="5f52c95d-19f5-42e1-fc7e-ebf4c8bd7805"}
+``` python
+# Calculer la surface moyenne des squares
+
+Squares = EspacesvertsOk[(EspacesvertsOk["categorie"] == 'Square')]
+Squares["surface"].mean()
+```
+
+::: {.output .execute_result execution_count="33"}
+    4193.604810996563
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\"}" id="Ca-0U7tlfWBY" outputId="a9194801-e96e-4fe4-b688-26ae891f250d"}
+``` python
+# Calculer la surface moyenne des jardins
+
+Jardins = EspacesvertsOk[(EspacesvertsOk["categorie"] == 'Jardin')]
+Jardins["surface"].mean()
+```
+
+::: {.output .execute_result execution_count="34"}
+    8805.366834170854
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":383}" id="64EiEnEOfaqG" outputId="f717cd29-9d0b-4c34-9c97-721282fe8c17"}
+``` python
+# Calculer la surface moyenne de chaque type d'espace vert
+
+SurfaceType = EspacevertsParis[["categorie", "surface"]].groupby("categorie").mean()
+SurfaceType.head()
+SurfaceType.plot(kind="bar")
+```
+
+::: {.output .execute_result execution_count="35"}
+    <AxesSubplot:xlabel='categorie'>
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/027665bdb82c7f561dda74711f6db80ebe96ee9f.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":573}" id="AwM4Igju-uLs" outputId="d3c56ca4-e713-4350-dcf7-c523a78d4e9f"}
+``` python
+#Calculer la superficie des espaces vert par arrondissement (agrégation statistique)
+
+SurfaceEspacevertARDT = EspacevertsParis[["Arrondissement", "surface"]].groupby("Arrondissement").sum()
+SurfaceEspacevertARDT.plot(figsize =(15,5), kind="bar", color= "green", width=0.7)
+plt.title("Surface d'espaces verts par Arrondissement")
+plt.xlabel("Arrondissement")
+plt.ylabel("Surface espaces verts")
+SurfaceEspacevertARDT.head()
+```
+
+::: {.output .execute_result execution_count="36"}
+```{=html}
+
+  <div id="df-db9a06a4-7b01-46b2-bf76-e98fd20de40f">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>surface</th>
+    </tr>
+    <tr>
+      <th>Arrondissement</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>01</th>
+      <td>49987.0</td>
+    </tr>
+    <tr>
+      <th>02</th>
+      <td>3485.0</td>
+    </tr>
+    <tr>
+      <th>03</th>
+      <td>28342.0</td>
+    </tr>
+    <tr>
+      <th>04</th>
+      <td>69787.0</td>
+    </tr>
+    <tr>
+      <th>05</th>
+      <td>84278.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-db9a06a4-7b01-46b2-bf76-e98fd20de40f')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-db9a06a4-7b01-46b2-bf76-e98fd20de40f button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-db9a06a4-7b01-46b2-bf76-e98fd20de40f');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/2285b6c65d0ee80990c26d6236fa8c5afa2cf33f.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":593}" id="zoqM7K5RKnEA" outputId="208f08fb-1dbf-4c0a-bd99-c207091569c3"}
+``` python
+# Représenter la proportion de chacun des arrondissements
+
+SurfaceEspacevertARDT.plot.pie(y='surface', figsize=(10, 10), legend=False)
+
+my_circle=plt.Circle( (0,0), 0.4, color='white')
+p=plt.gcf()
+p.gca().add_artist(my_circle)
+```
+
+::: {.output .execute_result execution_count="38"}
+    <matplotlib.patches.Circle at 0x7f8776373820>
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/982bd2c8c9baa51fbe07660f3666248241fa5671.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\"}" id="bR3_ZOOx_Vmv" outputId="6a1f06f8-31f9-41ba-e57d-afa9036daf3a"}
+``` python
+#Verifications
+
+totalsurface = EspacevertsParis['surface'].sum()
+print(totalsurface)
+
+totalsurface2 = SurfaceEspacevertARDT['surface'].sum()
+print(totalsurface2)
+```
+
+::: {.output .stream .stdout}
+    6751842.0
+    6751842.0
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":555}" id="0t50V-sXZaD_" outputId="5c85fc10-73cb-46d8-8b89-aa9dcb1ff79f"}
+``` python
+# Calculer le nombre et la surface moyenne des espaces verts par arrondissement
+
+EspacevertARDT = EspacevertsParis.groupby("ardt").agg(Nb=("id", "count"), Surface=("surface", "sum"))
+EspacevertARDT.plot(figsize =(15,5), kind="scatter", x="Nb", y= "Surface", color= "green")
+EspacevertARDT.head()
+```
+
+::: {.output .execute_result execution_count="100"}
+```{=html}
+
+  <div id="df-5cdeb09e-2b6b-46fa-aa4e-b4f9224a10ba">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Nb</th>
+      <th>Surface</th>
+    </tr>
+    <tr>
+      <th>ardt</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>75001</th>
+      <td>15</td>
+      <td>49987.0</td>
+    </tr>
+    <tr>
+      <th>75002</th>
+      <td>26</td>
+      <td>3485.0</td>
+    </tr>
+    <tr>
+      <th>75003</th>
+      <td>38</td>
+      <td>28212.0</td>
+    </tr>
+    <tr>
+      <th>75004</th>
+      <td>61</td>
+      <td>68610.0</td>
+    </tr>
+    <tr>
+      <th>75005</th>
+      <td>80</td>
+      <td>84298.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-5cdeb09e-2b6b-46fa-aa4e-b4f9224a10ba')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-5cdeb09e-2b6b-46fa-aa4e-b4f9224a10ba button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-5cdeb09e-2b6b-46fa-aa4e-b4f9224a10ba');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/fec1e2b98cfb912ad2206a1a5c338545ed57b87c.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":238}" id="IMhXdgiJLiuq" outputId="894959d8-2caf-441a-b9ad-6485cde5c36f"}
+``` python
+# Calculer la surface de type d'espaces verts par arrondissement
+
+SurfaceTypeEspacevertARDT = EspacevertsParis[["ardt", "categorie", "surface"]].groupby(["ardt", "categorie"]).sum()
+SurfaceTypeEspacevertARDT.head()
+SurfaceTypeEspacevertARDT.plot.pie(y='surface', figsize=(10, 10), subplots=True, legend=False)
+```
+
+::: {.output .execute_result execution_count="112"}
+```{=html}
+
+  <div id="df-1e629456-e9fc-4abb-82c0-e910b07729a1">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th></th>
+      <th>surface</th>
+    </tr>
+    <tr>
+      <th>ardt</th>
+      <th>categorie</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th rowspan="5" valign="top">75001</th>
+      <th>Decoration</th>
+      <td>12.0</td>
+    </tr>
+    <tr>
+      <th>Jardin</th>
+      <td>43170.0</td>
+    </tr>
+    <tr>
+      <th>Jardinet</th>
+      <td>362.0</td>
+    </tr>
+    <tr>
+      <th>Jardiniere</th>
+      <td>1363.0</td>
+    </tr>
+    <tr>
+      <th>Murs vegetalises</th>
+      <td>140.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-1e629456-e9fc-4abb-82c0-e910b07729a1')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-1e629456-e9fc-4abb-82c0-e910b07729a1 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-1e629456-e9fc-4abb-82c0-e910b07729a1');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":617}" id="LcIUtc9kNjFV" outputId="fcfc88f6-b5db-476d-e5eb-02a280601e7f"}
+``` python
+# Calculer la surface d'espaces verts par arrondissement et leur nombre
+SurfaceNbEspacevertARDT = EspacevertsParis[["ardt","surface"]].groupby(["ardt"]).agg(['size', 'sum'])
+SurfaceNbEspacevertARDT.head()
+
+
+SurfaceNbEspacevertARDT.plot.bar(subplots=True, figsize=(30, 10), legend=False)
+```
+
+::: {.output .execute_result execution_count="136"}
+    array([<matplotlib.axes._subplots.AxesSubplot object at 0x7f0c7d503d10>,
+           <matplotlib.axes._subplots.AxesSubplot object at 0x7f0c7d3a2410>],
+          dtype=object)
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/08935e30fb0156a2025b2831af799c67ee263221.png)
+:::
+:::
+
+::: {.cell .markdown id="UdTWRleXUoHV"}
+<https://github.com/matplotlib/cheatsheets>
+:::
+
+::: {.cell .markdown id="qwEV86OEucUV"}
+## Exercices autour des lieux de tournage
+:::
+
+::: {.cell .markdown id="qbleMX_Fvs3E"}
+**URL des Données**
+
+<https://opendata.paris.fr/explore/dataset/lieux-de-tournage-a-paris>
+
+-   Combien de tournage dans le jeu de données
+-   Combien de tournages de films
+-   Combien de tournages de films dans le 16eme arrondissement
+-   Combien de tournages de séries dans le 1er arrondissement
+-   Faire un graphique du nombre de tournages par année
+-   Faire un graphique du nombre de tournages par type
+-   Faire un graphique du nombre de tournages par arrondissement
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\"}" id="wUteSPsCvM1B" outputId="37599171-924f-449a-ad55-57bb9a3fcc8a"}
+``` python
+#Téléchargement des datas depuis le site opendata de Paris
+!wget -O tournages.csv https://opendata.paris.fr/explore/dataset/lieux-de-tournage-a-paris/download/?format=csv&timezone=Europe/Berlin&lang=fr&use_labels_for_header=true&csv_separator=%3B 
+```
+
+::: {.output .stream .stdout}
+    --2022-02-11 14:47:15--  https://opendata.paris.fr/explore/dataset/lieux-de-tournage-a-paris/download/?format=csv
+    Resolving opendata.paris.fr (opendata.paris.fr)... 34.249.199.226, 34.248.20.69
+    Connecting to opendata.paris.fr (opendata.paris.fr)|34.249.199.226|:443... connected.
+    HTTP request sent, awaiting response... 200 OK
+    Length: unspecified [application/csv]
+    Saving to: ‘tournages.csv’
+
+    tournages.csv           [               <=>  ]   2.28M   428KB/s    in 5.5s    
+
+    2022-02-11 14:47:23 (428 KB/s) - ‘tournages.csv’ saved [2389303]
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":479}" id="iU2o-RN5vdYp" outputId="a567a3ad-0eeb-4f70-ea6c-9c83de3daf58"}
+``` python
+#Importer CSV to dataframe
+
+tournages = pd.read_csv("tournages.csv", sep=';')
+tournages.head()
+```
+
+::: {.output .execute_result execution_count="138"}
+```{=html}
+
+  <div id="df-2224fbc6-e1c7-4b90-8bc6-41ea2ca328e6">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id_lieu</th>
+      <th>annee_tournage</th>
+      <th>type_tournage</th>
+      <th>nom_tournage</th>
+      <th>nom_realisateur</th>
+      <th>nom_producteur</th>
+      <th>adresse_lieu</th>
+      <th>ardt_lieu</th>
+      <th>date_debut</th>
+      <th>date_fin</th>
+      <th>coord_x</th>
+      <th>coord_y</th>
+      <th>geo_shape</th>
+      <th>geo_point_2d</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2018-1354</td>
+      <td>2018</td>
+      <td>Téléfilm</td>
+      <td>HUGUETTE</td>
+      <td>ANTOINE GARCEAU</td>
+      <td>MON VOISIN PRODUCTIONS</td>
+      <td>14 quai de la seine, 75019 paris</td>
+      <td>75019.0</td>
+      <td>2018-11-06</td>
+      <td>2018-11-06</td>
+      <td>2.371499</td>
+      <td>48.885080</td>
+      <td>{"coordinates": [2.371499161092738, 48.8850804...</td>
+      <td>48.8850804769,2.37149916109</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2018-1359</td>
+      <td>2018</td>
+      <td>Téléfilm</td>
+      <td>Temps de Chien</td>
+      <td>Edouard DELUC</td>
+      <td>THE FILM TV</td>
+      <td>200 rue du faubourg saint-denis, 75010 paris</td>
+      <td>75010.0</td>
+      <td>2018-10-30</td>
+      <td>2018-10-30</td>
+      <td>2.358481</td>
+      <td>48.881698</td>
+      <td>{"coordinates": [2.358480592599792, 48.8816977...</td>
+      <td>48.8816977998,2.3584805926</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2018-1362</td>
+      <td>2018</td>
+      <td>Long métrage</td>
+      <td>Notre dame</td>
+      <td>Valérie Donzelli</td>
+      <td>RECTANGLE PRODUCTIONS</td>
+      <td>4 rue dulac, 75015 paris</td>
+      <td>75015.0</td>
+      <td>2018-11-06</td>
+      <td>2018-11-06</td>
+      <td>2.315213</td>
+      <td>48.843533</td>
+      <td>{"coordinates": [2.315212506088781, 48.8435330...</td>
+      <td>48.8435330229,2.31521250609</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>2019-690</td>
+      <td>2019</td>
+      <td>Long métrage</td>
+      <td>TOUT SIMPLEMENT NOIR</td>
+      <td>JEAN PASCAL ZADI ET JOHN WAXXX</td>
+      <td>GAUMONT</td>
+      <td>32 rue louis le grand, 75002 paris</td>
+      <td>75002.0</td>
+      <td>2019-06-12</td>
+      <td>2019-06-12</td>
+      <td>2.334345</td>
+      <td>48.870639</td>
+      <td>{"coordinates": [2.334345131004881, 48.8706387...</td>
+      <td>48.8706387799,2.334345131</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>2019-698</td>
+      <td>2019</td>
+      <td>Long métrage</td>
+      <td>Madame Claude</td>
+      <td>Sylvie VERHEYDE</td>
+      <td>Les Compagnons du Cinéma</td>
+      <td>2 rue du commandant schloesing, 75116 paris</td>
+      <td>75116.0</td>
+      <td>2019-06-17</td>
+      <td>2019-06-17</td>
+      <td>2.284989</td>
+      <td>48.861892</td>
+      <td>{"coordinates": [2.284988779195575, 48.8618919...</td>
+      <td>48.8618919916,2.2849887792</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-2224fbc6-e1c7-4b90-8bc6-41ea2ca328e6')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-2224fbc6-e1c7-4b90-8bc6-41ea2ca328e6 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-2224fbc6-e1c7-4b90-8bc6-41ea2ca328e6');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":532}" id="NoaTQPW1FPpu" outputId="c7469524-3b46-4bbc-de3a-d8ed593c8756"}
+``` python
+#Compter le nombre de tournages par année
+
+tournagesdate = tournages[["annee_tournage", "type_tournage"]].groupby("annee_tournage").count()
+tournagesdate.plot(figsize =(8,4), kind="bar")
+plt.title("Nb de tournages par année")
+plt.xlabel("Année")
+plt.ylabel("Nb tournages")
+tournagesdate.head()
+```
+
+::: {.output .execute_result execution_count="139"}
+```{=html}
+
+  <div id="df-7041d27d-e607-4a2a-aaad-aa9de3d109b6">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>type_tournage</th>
+    </tr>
+    <tr>
+      <th>annee_tournage</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>2016</th>
+      <td>2660</td>
+    </tr>
+    <tr>
+      <th>2017</th>
+      <td>1743</td>
+    </tr>
+    <tr>
+      <th>2018</th>
+      <td>1579</td>
+    </tr>
+    <tr>
+      <th>2019</th>
+      <td>1760</td>
+    </tr>
+    <tr>
+      <th>2020</th>
+      <td>1177</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-7041d27d-e607-4a2a-aaad-aa9de3d109b6')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-7041d27d-e607-4a2a-aaad-aa9de3d109b6 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-7041d27d-e607-4a2a-aaad-aa9de3d109b6');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/7ef9d504d846f98c8fc2a2aabab0303d7c4872e7.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":602}" id="H9Ss1yFkwiLa" outputId="85923ecc-4d7e-476e-f1ea-c8b7f40ff4b0"}
+``` python
+#Compter le nombre de tournages par arrondissement
+
+tournagesARDT = tournages[["ardt_lieu", "type_tournage"]].groupby("ardt_lieu").count()
+tournagesARDT.plot(figsize =(10,5), kind="bar")
+plt.title("Nb de tournages par Ardt")
+plt.xlabel("Arrondissement")
+plt.ylabel("Nb tournages")
+tournagesARDT.head()
+```
+
+::: {.output .execute_result execution_count="140"}
+```{=html}
+
+  <div id="df-ff70e6b2-c80c-4e3f-a312-a8b32382cb70">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>type_tournage</th>
+    </tr>
+    <tr>
+      <th>ardt_lieu</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>75001.0</th>
+      <td>497</td>
+    </tr>
+    <tr>
+      <th>75002.0</th>
+      <td>219</td>
+    </tr>
+    <tr>
+      <th>75003.0</th>
+      <td>164</td>
+    </tr>
+    <tr>
+      <th>75004.0</th>
+      <td>497</td>
+    </tr>
+    <tr>
+      <th>75005.0</th>
+      <td>469</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-ff70e6b2-c80c-4e3f-a312-a8b32382cb70')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-ff70e6b2-c80c-4e3f-a312-a8b32382cb70 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-ff70e6b2-c80c-4e3f-a312-a8b32382cb70');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/70d8fba64d8412d0601a5b77991124f6ca1477b8.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":598}" id="9IJUZW0_xY0u" outputId="f6e309b4-0d0b-4c5f-8873-92461c6aee63"}
+``` python
+#Compter le nombre de tournages par type
+
+tournagesTYPE = tournages[["type_tournage", "ardt_lieu"]].groupby("type_tournage").count()
+tournagesTYPE.plot(figsize =(10,5), kind="bar")
+plt.title("Nb de tournages par type")
+plt.xlabel("Type")
+plt.ylabel("Nb tournages")
+tournagesTYPE.head()
+```
+
+::: {.output .execute_result execution_count="141"}
+```{=html}
+
+  <div id="df-228ec38d-59f0-473c-b3c0-126eaa530710">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>ardt_lieu</th>
+    </tr>
+    <tr>
+      <th>type_tournage</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Long métrage</th>
+      <td>5013</td>
+    </tr>
+    <tr>
+      <th>Série TV</th>
+      <td>3056</td>
+    </tr>
+    <tr>
+      <th>Série Web</th>
+      <td>380</td>
+    </tr>
+    <tr>
+      <th>Téléfilm</th>
+      <td>469</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-228ec38d-59f0-473c-b3c0-126eaa530710')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-228ec38d-59f0-473c-b3c0-126eaa530710 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-228ec38d-59f0-473c-b3c0-126eaa530710');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/5662961bb8f911849cdb47d6d9b16ac99ef67070.png)
+:::
+:::
+
+::: {.cell .markdown id="EQkbWTkMaiFI"}
+## Transformer un csv en geodataframe
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\"}" id="aRXfCeebDKU3" outputId="daed0021-17e5-43e3-90cb-d7ee00d48756"}
+``` python
+#Téléchargement des datas depuis le site opendata de Paris
+
+!wget -O toilettes.csv https://opendata.paris.fr/explore/dataset/sanisettesparis/download/?format=csv&timezone=Europe/Berlin&lang=fr&use_labels_for_header=true&csv_separator=%3B
+```
+
+::: {.output .stream .stdout}
+    --2022-02-11 14:47:44--  https://opendata.paris.fr/explore/dataset/sanisettesparis/download/?format=csv
+    Resolving opendata.paris.fr (opendata.paris.fr)... 34.249.199.226, 34.248.20.69
+    Connecting to opendata.paris.fr (opendata.paris.fr)|34.249.199.226|:443... connected.
+    HTTP request sent, awaiting response... 200 OK
+    Length: unspecified [application/csv]
+    Saving to: ‘toilettes.csv’
+
+    toilettes.csv           [   <=>              ] 122.98K   242KB/s    in 0.5s    
+
+    2022-02-11 14:47:47 (242 KB/s) - ‘toilettes.csv’ saved [125932]
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":337}" id="NXoxYq-vDQlo" outputId="cd3f2ee2-f8ce-4c84-f0f6-ccf39679be08"}
+``` python
+#Importer CSV to dataframe
+
+toilettes = pd.read_csv("toilettes.csv", sep=';')
+toilettes.head()
+```
+
+::: {.output .execute_result execution_count="143"}
+```{=html}
+
+  <div id="df-d585f95f-5fd0-4871-a46b-7cb78280ef6a">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>type</th>
+      <th>statut</th>
+      <th>adresse</th>
+      <th>arrondissement</th>
+      <th>horaire</th>
+      <th>acces_pmr</th>
+      <th>relais_bebe</th>
+      <th>url_fiche_equipement</th>
+      <th>geo_shape</th>
+      <th>geo_point_2d</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>SANISETTE</td>
+      <td>NaN</td>
+      <td>2  RUE JACQUES KELLNER</td>
+      <td>75017.0</td>
+      <td>6 h - 22 h</td>
+      <td>Oui</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>{"coordinates": [[2.328040763341667, 48.895835...</td>
+      <td>48.89583555740396,2.328040763341667</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>SANISETTE</td>
+      <td>NaN</td>
+      <td>15  AVENUE DE LA PORTE DE CLIGNANCOURT</td>
+      <td>75018.0</td>
+      <td>6 h - 22 h</td>
+      <td>Oui</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>{"coordinates": [[2.343963695246802, 48.899194...</td>
+      <td>48.8991942601401,2.343963695246802</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>SANISETTE</td>
+      <td>NaN</td>
+      <td>29  RUE MANIN</td>
+      <td>75019.0</td>
+      <td>24 h / 24</td>
+      <td>Oui</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>{"coordinates": [[2.3782622313212523, 48.87861...</td>
+      <td>48.87861935487687,2.3782622313212523</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>SANISETTE</td>
+      <td>NaN</td>
+      <td>14  RUE MEYNADIER</td>
+      <td>75019.0</td>
+      <td>6 h - 22 h</td>
+      <td>Oui</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>{"coordinates": [[2.383450508308367, 48.883501...</td>
+      <td>48.883501985506584,2.383450508308367</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>SANISETTE</td>
+      <td>NaN</td>
+      <td>face au 196 BOULEVARD DE LA VILLETTE</td>
+      <td>75019.0</td>
+      <td>24 h / 24</td>
+      <td>Oui</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>{"coordinates": [[2.370336342149233, 48.882213...</td>
+      <td>48.882213723425714,2.370336342149233</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-d585f95f-5fd0-4871-a46b-7cb78280ef6a')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-d585f95f-5fd0-4871-a46b-7cb78280ef6a button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-d585f95f-5fd0-4871-a46b-7cb78280ef6a');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":444}" id="Q7w9dw08RGzY" outputId="baf12cd2-459f-4885-dfc9-59a384a65abf"}
+``` python
+#Séparer la columne des coordonnées géographiques
+
+toilettes[['Latitude','Longitude']] = toilettes['geo_point_2d'].str.split(',', expand=True)
+toilettes.head()
+```
+
+::: {.output .execute_result execution_count="144"}
+```{=html}
+
+  <div id="df-05ccc168-feee-425f-ae3d-488b6a0b6e96">
+    <div class="colab-df-container">
+      <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>type</th>
+      <th>statut</th>
+      <th>adresse</th>
+      <th>arrondissement</th>
+      <th>horaire</th>
+      <th>acces_pmr</th>
+      <th>relais_bebe</th>
+      <th>url_fiche_equipement</th>
+      <th>geo_shape</th>
+      <th>geo_point_2d</th>
+      <th>Latitude</th>
+      <th>Longitude</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>SANISETTE</td>
+      <td>NaN</td>
+      <td>2  RUE JACQUES KELLNER</td>
+      <td>75017.0</td>
+      <td>6 h - 22 h</td>
+      <td>Oui</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>{"coordinates": [[2.328040763341667, 48.895835...</td>
+      <td>48.89583555740396,2.328040763341667</td>
+      <td>48.89583555740396</td>
+      <td>2.328040763341667</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>SANISETTE</td>
+      <td>NaN</td>
+      <td>15  AVENUE DE LA PORTE DE CLIGNANCOURT</td>
+      <td>75018.0</td>
+      <td>6 h - 22 h</td>
+      <td>Oui</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>{"coordinates": [[2.343963695246802, 48.899194...</td>
+      <td>48.8991942601401,2.343963695246802</td>
+      <td>48.8991942601401</td>
+      <td>2.343963695246802</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>SANISETTE</td>
+      <td>NaN</td>
+      <td>29  RUE MANIN</td>
+      <td>75019.0</td>
+      <td>24 h / 24</td>
+      <td>Oui</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>{"coordinates": [[2.3782622313212523, 48.87861...</td>
+      <td>48.87861935487687,2.3782622313212523</td>
+      <td>48.87861935487687</td>
+      <td>2.3782622313212523</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>SANISETTE</td>
+      <td>NaN</td>
+      <td>14  RUE MEYNADIER</td>
+      <td>75019.0</td>
+      <td>6 h - 22 h</td>
+      <td>Oui</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>{"coordinates": [[2.383450508308367, 48.883501...</td>
+      <td>48.883501985506584,2.383450508308367</td>
+      <td>48.883501985506584</td>
+      <td>2.383450508308367</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>SANISETTE</td>
+      <td>NaN</td>
+      <td>face au 196 BOULEVARD DE LA VILLETTE</td>
+      <td>75019.0</td>
+      <td>24 h / 24</td>
+      <td>Oui</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>{"coordinates": [[2.370336342149233, 48.882213...</td>
+      <td>48.882213723425714,2.370336342149233</td>
+      <td>48.882213723425714</td>
+      <td>2.370336342149233</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+      <button class="colab-df-convert" onclick="convertToInteractive('df-05ccc168-feee-425f-ae3d-488b6a0b6e96')"
+              title="Convert this dataframe to an interactive table."
+              style="display:none;">
+        
+  <svg xmlns="http://www.w3.org/2000/svg" height="24px"viewBox="0 0 24 24"
+       width="24px">
+    <path d="M0 0h24v24H0V0z" fill="none"/>
+    <path d="M18.56 5.44l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94zm-11 1L8.5 8.5l.94-2.06 2.06-.94-2.06-.94L8.5 2.5l-.94 2.06-2.06.94zm10 10l.94 2.06.94-2.06 2.06-.94-2.06-.94-.94-2.06-.94 2.06-2.06.94z"/><path d="M17.41 7.96l-1.37-1.37c-.4-.4-.92-.59-1.43-.59-.52 0-1.04.2-1.43.59L10.3 9.45l-7.72 7.72c-.78.78-.78 2.05 0 2.83L4 21.41c.39.39.9.59 1.41.59.51 0 1.02-.2 1.41-.59l7.78-7.78 2.81-2.81c.8-.78.8-2.07 0-2.86zM5.41 20L4 18.59l7.72-7.72 1.47 1.35L5.41 20z"/>
+  </svg>
+      </button>
+      
+  <style>
+    .colab-df-container {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 12px;
+    }
+
+    .colab-df-convert {
+      background-color: #E8F0FE;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      fill: #1967D2;
+      height: 32px;
+      padding: 0 0 0 0;
+      width: 32px;
+    }
+
+    .colab-df-convert:hover {
+      background-color: #E2EBFA;
+      box-shadow: 0px 1px 2px rgba(60, 64, 67, 0.3), 0px 1px 3px 1px rgba(60, 64, 67, 0.15);
+      fill: #174EA6;
+    }
+
+    [theme=dark] .colab-df-convert {
+      background-color: #3B4455;
+      fill: #D2E3FC;
+    }
+
+    [theme=dark] .colab-df-convert:hover {
+      background-color: #434B5C;
+      box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+      filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.3));
+      fill: #FFFFFF;
+    }
+  </style>
+
+      <script>
+        const buttonEl =
+          document.querySelector('#df-05ccc168-feee-425f-ae3d-488b6a0b6e96 button.colab-df-convert');
+        buttonEl.style.display =
+          google.colab.kernel.accessAllowed ? 'block' : 'none';
+
+        async function convertToInteractive(key) {
+          const element = document.querySelector('#df-05ccc168-feee-425f-ae3d-488b6a0b6e96');
+          const dataTable =
+            await google.colab.kernel.invokeFunction('convertToInteractive',
+                                                     [key], {});
+          if (!dataTable) return;
+
+          const docLinkHtml = 'Like what you see? Visit the ' +
+            '<a target="_blank" href=https://colab.research.google.com/notebooks/data_table.ipynb>data table notebook</a>'
+            + ' to learn more about interactive tables.';
+          element.innerHTML = '';
+          dataTable['output_type'] = 'display_data';
+          await google.colab.output.renderOutput(dataTable, element);
+          const docLink = document.createElement('div');
+          docLink.innerHTML = docLinkHtml;
+          element.appendChild(docLink);
+        }
+      </script>
+    </div>
+  </div>
+  
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":418}" id="tn9SFWqIQlpg" outputId="7e244a16-1140-4837-857d-58de1d700b8a"}
+``` python
+#Dataframe to GeoDataframe
+
+toilettes = gpd.GeoDataFrame(toilettes, crs = 'epsg:4326', geometry=gpd.points_from_xy(toilettes.Longitude, toilettes.Latitude))
+toilettes.plot(figsize=(10,12), markersize=1)
+```
+
+::: {.output .execute_result execution_count="145"}
+    <matplotlib.axes._subplots.AxesSubplot at 0x7f0c796e04d0>
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/8b9010383934e5834d1cb5fa1f009be08828349f.png)
+:::
+:::
+
+::: {.cell .markdown id="ko4DsErham8l"}
+## Exercices autour du jeu de données des arbres
+:::
+
+::: {.cell .markdown id="y6D6c6Liey7i"}
+URL : <https://opendata.paris.fr/explore/dataset/les-arbres>
+
+-   Importer le dataset des arbres\
+-   Compter le nombre d\'abres
+-   Restructurer le jeu de données (sélection de variables et renommage)
+    \> \"idbase\", \"domanialite\", \"arrondissement\",
+    \"libellefrancais\", \"hauteurenm\", \"geo_point_2d\"
+-   Proposer une visualisation du nb d\'arbres par arrondissement
+-   Proposer une visualisation du nb d\'arbres par domanialité
+-   Proposer une visualisation de la hauteur moyenne par type
+-   Proposer une visualisation de la hauteur moyenne par arrondissement
+-   Créer un géodataframe
+-   Faire une carte avec uniquement les chênes, les erables et les
+    frênes
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":347}" id="DrYCtEiJ8paS" outputId="23149223-24e6-4273-99ae-569b5ca8f408"}
+``` python
+#Importer CSV to dataframe
+
+arbres = pd.read_csv("arbres.csv", sep=';')
+arbres.head()
+```
+
+::: {.output .execute_result execution_count="31"}
+```{=html}
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>idbase</th>
+      <th>typeemplacement</th>
+      <th>domanialite</th>
+      <th>arrondissement</th>
+      <th>complementadresse</th>
+      <th>numero</th>
+      <th>adresse</th>
+      <th>idemplacement</th>
+      <th>libellefrancais</th>
+      <th>genre</th>
+      <th>espece</th>
+      <th>varieteoucultivar</th>
+      <th>circonferenceencm</th>
+      <th>hauteurenm</th>
+      <th>stadedeveloppement</th>
+      <th>remarquable</th>
+      <th>geo_point_2d</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>236865</td>
+      <td>Arbre</td>
+      <td>Alignement</td>
+      <td>PARIS 18E ARRDT</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>RUE BERNARD DIMEY</td>
+      <td>000202005</td>
+      <td>Cerisier à grappes</td>
+      <td>Prunus</td>
+      <td>padus</td>
+      <td>''Tiefurt''</td>
+      <td>20</td>
+      <td>5</td>
+      <td>NaN</td>
+      <td>NON</td>
+      <td>48.8970800881,2.33129044307</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>214956</td>
+      <td>Arbre</td>
+      <td>Alignement</td>
+      <td>PARIS 13E ARRDT</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>AVENUE DE FRANCE</td>
+      <td>000501016</td>
+      <td>Arbre aux quarante écus</td>
+      <td>Ginkgo</td>
+      <td>biloba</td>
+      <td>NaN</td>
+      <td>45</td>
+      <td>8</td>
+      <td>JA</td>
+      <td>NON</td>
+      <td>48.8301994313,2.37697518465</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>214399</td>
+      <td>Arbre</td>
+      <td>Alignement</td>
+      <td>PARIS 15E ARRDT</td>
+      <td>SN°</td>
+      <td>NaN</td>
+      <td>RUE LEBLANC</td>
+      <td>000602011</td>
+      <td>Poirier à fleurs</td>
+      <td>Pyrus</td>
+      <td>calleryana</td>
+      <td>''Chanticleer''</td>
+      <td>30</td>
+      <td>7</td>
+      <td>A</td>
+      <td>NON</td>
+      <td>48.8365129867,2.27971919875</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>232195</td>
+      <td>Arbre</td>
+      <td>Alignement</td>
+      <td>PARIS 17E ARRDT</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>BOULEVARD PEREIRE</td>
+      <td>001002003</td>
+      <td>Sophora</td>
+      <td>Sophora</td>
+      <td>japonica</td>
+      <td>NaN</td>
+      <td>184</td>
+      <td>17</td>
+      <td>M</td>
+      <td>NON</td>
+      <td>48.8808487215,2.28936083674</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>239639</td>
+      <td>Arbre</td>
+      <td>Alignement</td>
+      <td>PARIS 10E ARRDT</td>
+      <td>20</td>
+      <td>NaN</td>
+      <td>BOULEVARD DE MAGENTA</td>
+      <td>000202015</td>
+      <td>Orme</td>
+      <td>Ulmus</td>
+      <td>NaN</td>
+      <td>''Sapporo Autumn Gold'' RESISTA</td>
+      <td>63</td>
+      <td>12</td>
+      <td>A</td>
+      <td>NON</td>
+      <td>48.8699906691,2.36182643939</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\"}" id="aEP3T5xT9CaE" outputId="46a8bf74-09b0-43a3-f144-fc4715f64377"}
+``` python
+#Compter le nombre d'arbres
+
+arbres['domanialite'].size
+```
+
+::: {.output .execute_result execution_count="32"}
+    204909
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":206}" id="qanwYKLUFiSn" outputId="85ad9afe-18cb-408f-ea05-eaf87962c3cc"}
+``` python
+#Réorganiser la table
+
+arbresok = arbres[["idbase", "domanialite", "arrondissement", "libellefrancais", "hauteurenm", "circonferenceencm", "remarquable", "geo_point_2d"]]
+arbresok.head()
+```
+
+::: {.output .execute_result execution_count="63"}
+```{=html}
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>idbase</th>
+      <th>domanialite</th>
+      <th>arrondissement</th>
+      <th>libellefrancais</th>
+      <th>hauteurenm</th>
+      <th>circonferenceencm</th>
+      <th>remarquable</th>
+      <th>geo_point_2d</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>236865</td>
+      <td>Alignement</td>
+      <td>PARIS 18E ARRDT</td>
+      <td>Cerisier à grappes</td>
+      <td>5</td>
+      <td>20</td>
+      <td>NON</td>
+      <td>48.8970800881,2.33129044307</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>214956</td>
+      <td>Alignement</td>
+      <td>PARIS 13E ARRDT</td>
+      <td>Arbre aux quarante écus</td>
+      <td>8</td>
+      <td>45</td>
+      <td>NON</td>
+      <td>48.8301994313,2.37697518465</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>214399</td>
+      <td>Alignement</td>
+      <td>PARIS 15E ARRDT</td>
+      <td>Poirier à fleurs</td>
+      <td>7</td>
+      <td>30</td>
+      <td>NON</td>
+      <td>48.8365129867,2.27971919875</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>232195</td>
+      <td>Alignement</td>
+      <td>PARIS 17E ARRDT</td>
+      <td>Sophora</td>
+      <td>17</td>
+      <td>184</td>
+      <td>NON</td>
+      <td>48.8808487215,2.28936083674</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>239639</td>
+      <td>Alignement</td>
+      <td>PARIS 10E ARRDT</td>
+      <td>Orme</td>
+      <td>12</td>
+      <td>63</td>
+      <td>NON</td>
+      <td>48.8699906691,2.36182643939</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":299}" id="rU4hoWhhFiSs" outputId="eb15523a-0abd-4807-80d7-aa5bde8a6e40"}
+``` python
+# Renommer les champs
+
+arbresok.rename(columns={'idbase': 'id','libellefrancais': 'type','hauteurenm': 'hauteur', 'circonferenceencm': 'circonference'}, inplace=True)
+arbresok.head()
+```
+
+::: {.output .stream .stderr}
+    /usr/local/lib/python3.7/dist-packages/pandas/core/frame.py:4308: SettingWithCopyWarning: 
+    A value is trying to be set on a copy of a slice from a DataFrame
+
+    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+      errors=errors,
+:::
+
+::: {.output .execute_result execution_count="64"}
+```{=html}
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+      <th>domanialite</th>
+      <th>arrondissement</th>
+      <th>type</th>
+      <th>hauteur</th>
+      <th>circonference</th>
+      <th>remarquable</th>
+      <th>geo_point_2d</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>236865</td>
+      <td>Alignement</td>
+      <td>PARIS 18E ARRDT</td>
+      <td>Cerisier à grappes</td>
+      <td>5</td>
+      <td>20</td>
+      <td>NON</td>
+      <td>48.8970800881,2.33129044307</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>214956</td>
+      <td>Alignement</td>
+      <td>PARIS 13E ARRDT</td>
+      <td>Arbre aux quarante écus</td>
+      <td>8</td>
+      <td>45</td>
+      <td>NON</td>
+      <td>48.8301994313,2.37697518465</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>214399</td>
+      <td>Alignement</td>
+      <td>PARIS 15E ARRDT</td>
+      <td>Poirier à fleurs</td>
+      <td>7</td>
+      <td>30</td>
+      <td>NON</td>
+      <td>48.8365129867,2.27971919875</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>232195</td>
+      <td>Alignement</td>
+      <td>PARIS 17E ARRDT</td>
+      <td>Sophora</td>
+      <td>17</td>
+      <td>184</td>
+      <td>NON</td>
+      <td>48.8808487215,2.28936083674</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>239639</td>
+      <td>Alignement</td>
+      <td>PARIS 10E ARRDT</td>
+      <td>Orme</td>
+      <td>12</td>
+      <td>63</td>
+      <td>NON</td>
+      <td>48.8699906691,2.36182643939</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":339}" id="Wlwd6krkHLUM" outputId="a3a03894-cd65-4e16-fd36-efe3853bdb81"}
+``` python
+# Faire un histogramme de distribution des hauteurs des arbres
+
+arbresok.plot.hist(y='hauteur', figsize=(5, 5))
+```
+
+::: {.output .execute_result execution_count="65"}
+    <matplotlib.axes._subplots.AxesSubplot at 0x7ff971f84850>
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/78a25a19ee09217f331dd22415f164faf6cd208f.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":339}" id="yuP6slCSH2Ks" outputId="1714d196-9483-4f24-8ba2-963f61aed260"}
+``` python
+#Nettoyer le jeu de données des valeurs abérantes (moins de 30m)
+
+arbresclean = arbresok[(arbresok["hauteur"] <=30)]
+arbresclean.plot.hist(y='hauteur', figsize=(10, 5), bins= 30, color = 'green', rwidth=0.8)
+```
+
+::: {.output .execute_result execution_count="66"}
+    <matplotlib.axes._subplots.AxesSubplot at 0x7ff971f408d0>
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/fe02a7f1137431b8b887d8464c50f6b697fd8936.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":339}" id="y460JoieJ7eY" outputId="3fda0444-e49b-49f1-d54e-ade68339d41e"}
+``` python
+# Faire un histogramme de distribution des circonférences des arbres
+
+arbresok.plot.hist(y='circonference', figsize=(5, 5))
+```
+
+::: {.output .execute_result execution_count="67"}
+    <matplotlib.axes._subplots.AxesSubplot at 0x7ff971e10e10>
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/a1f51935abc8cd499bf1a2e750dd5b117992c325.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":339}" id="VY1spEf7KBBZ" outputId="0aaafed4-a43b-4b93-9a4a-8c34b68a15da"}
+``` python
+#Nettoyer le jeu de données des valeurs abérantes (moins de 5m)
+
+arbresclean = arbresclean[(arbresclean["circonference"] <=500)]
+arbresclean.plot.hist(y='circonference', figsize=(10, 5), bins= 30, color = 'orange', rwidth=0.8)
+```
+
+::: {.output .execute_result execution_count="68"}
+    <matplotlib.axes._subplots.AxesSubplot at 0x7ff98f2f6190>
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/fca191883166850820957cbc90ffa82ab0423c80.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":353}" id="VzJLRwZ5JZpi" outputId="caa5b424-530c-414b-e8db-fa74f737c429"}
+``` python
+# Faire un scatterplot qui met en relation la hauteur et la circonférence des arbres
+
+arbresclean.plot.scatter(x='hauteur', y ="circonference", figsize=(10, 5), s=0.3)
+```
+
+::: {.output .execute_result execution_count="77"}
+    <matplotlib.axes._subplots.AxesSubplot at 0x7ff97184e150>
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/24390d4803ddfb1a8aec903039912181f4ca28ce.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":661}" id="7qDgfzyJ9Vyl" outputId="4bdb13b1-e325-4f42-db63-95eac5456e31"}
+``` python
+#Compter le nombre d'arbres par arrondissement
+
+ArbresARDT = arbresok[["arrondissement", "id"]].groupby("arrondissement").count()
+ArbresARDT.plot(figsize =(15,5), kind="bar")
+plt.title("Nb d'arbres par Ardt")
+plt.xlabel("Arrondissement")
+plt.ylabel("Nb d'arbres")
+ArbresARDT.head()
+```
+
+::: {.output .execute_result execution_count="78"}
+```{=html}
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+    </tr>
+    <tr>
+      <th>arrondissement</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>BOIS DE BOULOGNE</th>
+      <td>4117</td>
+    </tr>
+    <tr>
+      <th>BOIS DE VINCENNES</th>
+      <td>11835</td>
+    </tr>
+    <tr>
+      <th>HAUTS-DE-SEINE</th>
+      <td>5417</td>
+    </tr>
+    <tr>
+      <th>PARIS 10E ARRDT</th>
+      <td>3408</td>
+    </tr>
+    <tr>
+      <th>PARIS 11E ARRDT</th>
+      <td>5908</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+```
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/3040749cf5e2a8b3f00e09711c290e28851b9438.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":633}" id="qVNX0yqU-0pK" outputId="e9e9372c-4357-4f90-97ae-24f21f24b5e0"}
+``` python
+#Compter le nombre d'arbres par type de domanialité
+
+ArbresDomanialite = arbresok[["domanialite", "id"]].groupby("domanialite").count()
+ArbresDomanialite.plot(figsize =(15,5), kind="bar")
+plt.title("Nb d'arbres par domanialité")
+plt.xlabel("Domanialité")
+plt.ylabel("Nb d'arbres")
+ArbresDomanialite.head()
+```
+
+::: {.output .execute_result execution_count="79"}
+```{=html}
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+    </tr>
+    <tr>
+      <th>domanialite</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Alignement</th>
+      <td>106155</td>
+    </tr>
+    <tr>
+      <th>CIMETIERE</th>
+      <td>32161</td>
+    </tr>
+    <tr>
+      <th>DAC</th>
+      <td>27</td>
+    </tr>
+    <tr>
+      <th>DASCO</th>
+      <td>7204</td>
+    </tr>
+    <tr>
+      <th>DASES</th>
+      <td>11</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+```
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/771e68586131a37ac02331b54d5763d0bc6926a6.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":706}" id="LIx7UgckHDRo" outputId="004ec717-2bd1-4648-fd01-8bb6d2ec92d6"}
+``` python
+# Calculer la hauteur moyenne des arbres par type d'arbres
+
+HauteurType = arbresok[["type", "hauteur"]].groupby("type").mean()
+HauteurType.plot(figsize =(15,5), kind="bar")
+plt.xlabel("Type")
+plt.ylabel("hauteur moyenne")
+HauteurType.head()
+```
+
+::: {.output .execute_result execution_count="80"}
+```{=html}
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>hauteur</th>
+    </tr>
+    <tr>
+      <th>type</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Abelia</th>
+      <td>5.500000</td>
+    </tr>
+    <tr>
+      <th>Abricotier</th>
+      <td>2.379310</td>
+    </tr>
+    <tr>
+      <th>Abricotier fruit</th>
+      <td>2.000000</td>
+    </tr>
+    <tr>
+      <th>Ailante</th>
+      <td>8.520373</td>
+    </tr>
+    <tr>
+      <th>Alangium</th>
+      <td>2.333333</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+```
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/521c958abf8dbf6961e6a4ded9ebfb090913b114.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":649}" id="WNjFYAGFHdA2" outputId="372b6bf3-078c-414e-eca1-9cb3d0cf7ac7"}
+``` python
+# Calculer la hauteur moyenne des arbres par ardt
+
+HauteurType = arbresok[["arrondissement", "hauteur"]].groupby("arrondissement").mean()
+HauteurType.plot(figsize =(15,5), kind="bar")
+plt.xlabel("Type")
+plt.ylabel("hauteur moyenne")
+HauteurType.head()
+```
+
+::: {.output .execute_result execution_count="81"}
+```{=html}
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>hauteur</th>
+    </tr>
+    <tr>
+      <th>arrondissement</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>BOIS DE BOULOGNE</th>
+      <td>13.334224</td>
+    </tr>
+    <tr>
+      <th>BOIS DE VINCENNES</th>
+      <td>9.467596</td>
+    </tr>
+    <tr>
+      <th>HAUTS-DE-SEINE</th>
+      <td>2.106147</td>
+    </tr>
+    <tr>
+      <th>PARIS 10E ARRDT</th>
+      <td>10.675176</td>
+    </tr>
+    <tr>
+      <th>PARIS 11E ARRDT</th>
+      <td>10.854096</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+```
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/e3cabc519048d637d49d0cdca2d3423e075aa2c5.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":422}" id="veFoYcu8Aqo_" outputId="51fc9998-af2e-4397-84e4-923c5f2ac385"}
+``` python
+#Séparer la colonne des coordonnées géographiques
+
+arbresok[['Latitude','Longitude']] = arbresok['geo_point_2d'].str.split(',', expand=True)
+arbresok.head()
+```
+
+::: {.output .stream .stderr}
+    /usr/local/lib/python3.7/dist-packages/pandas/core/frame.py:3069: SettingWithCopyWarning: 
+    A value is trying to be set on a copy of a slice from a DataFrame.
+    Try using .loc[row_indexer,col_indexer] = value instead
+
+    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+      self[k1] = value[k2]
+:::
+
+::: {.output .execute_result execution_count="82"}
+```{=html}
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+      <th>domanialite</th>
+      <th>arrondissement</th>
+      <th>type</th>
+      <th>hauteur</th>
+      <th>circonference</th>
+      <th>remarquable</th>
+      <th>geo_point_2d</th>
+      <th>Latitude</th>
+      <th>Longitude</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>236865</td>
+      <td>Alignement</td>
+      <td>PARIS 18E ARRDT</td>
+      <td>Cerisier à grappes</td>
+      <td>5</td>
+      <td>20</td>
+      <td>NON</td>
+      <td>48.8970800881,2.33129044307</td>
+      <td>48.8970800881</td>
+      <td>2.33129044307</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>214956</td>
+      <td>Alignement</td>
+      <td>PARIS 13E ARRDT</td>
+      <td>Arbre aux quarante écus</td>
+      <td>8</td>
+      <td>45</td>
+      <td>NON</td>
+      <td>48.8301994313,2.37697518465</td>
+      <td>48.8301994313</td>
+      <td>2.37697518465</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>214399</td>
+      <td>Alignement</td>
+      <td>PARIS 15E ARRDT</td>
+      <td>Poirier à fleurs</td>
+      <td>7</td>
+      <td>30</td>
+      <td>NON</td>
+      <td>48.8365129867,2.27971919875</td>
+      <td>48.8365129867</td>
+      <td>2.27971919875</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>232195</td>
+      <td>Alignement</td>
+      <td>PARIS 17E ARRDT</td>
+      <td>Sophora</td>
+      <td>17</td>
+      <td>184</td>
+      <td>NON</td>
+      <td>48.8808487215,2.28936083674</td>
+      <td>48.8808487215</td>
+      <td>2.28936083674</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>239639</td>
+      <td>Alignement</td>
+      <td>PARIS 10E ARRDT</td>
+      <td>Orme</td>
+      <td>12</td>
+      <td>63</td>
+      <td>NON</td>
+      <td>48.8699906691,2.36182643939</td>
+      <td>48.8699906691</td>
+      <td>2.36182643939</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":206}" id="5NmIBLoLIGDk" outputId="3b205cbe-8163-45c3-e8b6-13637f12dd80"}
+``` python
+# Ne garder que les chênes, les Erables et les  Frênes
+
+Arbresselect = arbresok[(arbresok["type"] == 'Chêne') | (arbresok["type"] == 'Erable')| (arbresok["type"] == 'Frêne')]
+Arbresselect.head()
+```
+
+::: {.output .execute_result execution_count="83"}
+```{=html}
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>id</th>
+      <th>domanialite</th>
+      <th>arrondissement</th>
+      <th>type</th>
+      <th>hauteur</th>
+      <th>circonference</th>
+      <th>remarquable</th>
+      <th>geo_point_2d</th>
+      <th>Latitude</th>
+      <th>Longitude</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>11</th>
+      <td>250957</td>
+      <td>Alignement</td>
+      <td>PARIS 15E ARRDT</td>
+      <td>Frêne</td>
+      <td>6</td>
+      <td>25</td>
+      <td>NON</td>
+      <td>48.840880042,2.28718855814</td>
+      <td>48.840880042</td>
+      <td>2.28718855814</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>2021352</td>
+      <td>Alignement</td>
+      <td>PARIS 20E ARRDT</td>
+      <td>Erable</td>
+      <td>5</td>
+      <td>20</td>
+      <td>NON</td>
+      <td>48.869346584,2.41080601218</td>
+      <td>48.869346584</td>
+      <td>2.41080601218</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>166134</td>
+      <td>CIMETIERE</td>
+      <td>SEINE-SAINT-DENIS</td>
+      <td>Chêne</td>
+      <td>5</td>
+      <td>20</td>
+      <td>NON</td>
+      <td>48.906225365,2.41871937323</td>
+      <td>48.906225365</td>
+      <td>2.41871937323</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>242954</td>
+      <td>Alignement</td>
+      <td>PARIS 19E ARRDT</td>
+      <td>Erable</td>
+      <td>5</td>
+      <td>50</td>
+      <td>NON</td>
+      <td>48.8908881658,2.37448064504</td>
+      <td>48.8908881658</td>
+      <td>2.37448064504</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>2015120</td>
+      <td>Jardin</td>
+      <td>BOIS DE VINCENNES</td>
+      <td>Erable</td>
+      <td>0</td>
+      <td>0</td>
+      <td>NON</td>
+      <td>48.838198172,2.44767969144</td>
+      <td>48.838198172</td>
+      <td>2.44767969144</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+```
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":340}" id="Mkn61lE9L3LV" outputId="cf218158-88f3-4077-84ea-b4362383bc3c"}
+``` python
+# Visualisation (pie)
+
+les3arbres = Arbresselect[["type", "id"]].groupby("type").count()
+les3arbres.plot.pie(y='id', figsize=(5, 5), subplots=True)
+```
+
+::: {.output .execute_result execution_count="84"}
+    array([<matplotlib.axes._subplots.AxesSubplot object at 0x7ff96f9560d0>],
+          dtype=object)
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/a0692002a87f17820ba24c95c8e5c11a8fcdb0ad.png)
+:::
+:::
+
+::: {.cell .code colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":697}" id="bh846HvMA-Y9" outputId="222ddf39-e159-41bf-ebd6-42adefddb8f6"}
+``` python
+#Dataframe to GeoDataframe
+
+Arbresselect = gpd.GeoDataFrame(Arbresselect, crs = 'epsg:4326', geometry=gpd.points_from_xy(Arbresselect.Longitude, Arbresselect.Latitude))
+Arbresselect.plot(figsize=(10,12), markersize=0.2, column = "type", legend = 'true')
+```
+
+::: {.output .execute_result execution_count="85"}
+    <matplotlib.axes._subplots.AxesSubplot at 0x7ff971c44450>
+:::
+
+::: {.output .display_data}
+![](vertopal_52f18d5d1bb64558abfff3d3889fd464/4740c72f377f8a9c7221cda239d83c78a6685c18.png)
+:::
+:::
+
+::: {.cell .markdown id="3pv0qYQAGQJ1"}
+## Exercice autour des aménagements cyclables de Nantes
+
+URL du dataset :
+<https://data.nantesmetropole.fr/explore/dataset/244400404_amenagements-cyclables-nantes-metropole/table/?disjunctive.type&disjunctive.sens&disjunctive.commune&disjunctive.utilisation>
+
+-   Importer le jeu de données
+-   Faire un graphique de répartition en fonction du type d\'aménagement
+-   Faire un graphique de répartition en fonction de la longueur
+    d\'aménagement par commune
+:::
